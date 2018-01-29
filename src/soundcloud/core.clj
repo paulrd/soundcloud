@@ -1,6 +1,7 @@
 (ns soundcloud.core
   (:require [cheshire.core :refer :all]
             [org.httpkit.client :as http]
+            [clj-http.client :as client]
             [org.httpkit.server :as serv])
   (:gen-class))
 
@@ -13,7 +14,7 @@
 (defn get-tracks [genre]
   (loop [page 0 c []]
     (println "page: " page)
-    (let [new-tracks (-> page (mk-search-url genre) http/get deref
+    (let [new-tracks (-> page (mk-search-url genre) client/get #_http/get
                          :body (parse-string true))]
       (if (= (count new-tracks) 0)
         c
@@ -29,25 +30,39 @@
   $(document).ready(function(){
     $.stratus({links: '"
                   (reduce #(str %1 "," %2) links-to-tracks)
-                  "'});
+                  "', random: true, download: false, auto_play: true, buying: false, volume: 100});
   });
 </script></body></html>")})
 
 (defn -main [& args]
-  (let [tracks (shuffle (get-tracks "nature+sounds"))
-        links-to-tracks (take 20 (map :permalink_url tracks))
+  (let [tracks (->> "nature+sounds" get-tracks shuffle (take 86))
+        total-duration (/ (reduce #(+ %1 (:duration %2)) 0 tracks) 1000.0 60 60)
+        _ (println "total duration:" (format "%.2f" total-duration) "hours")
+        links-to-tracks (map :permalink_url tracks)
         handler (partial app links-to-tracks)]
     (serv/run-server handler {:port 8080})))
 
 (comment
-  (def tracks (get-tracks "nature+sounds"))
+  (def a (-> 0 (mk-search-url "nature+sounds") (http/get {:insecure? true})))
+
+  (def b (-> 0 (mk-search-url "nature+sounds") client/get))
+  b
+  a
+  (mk-search-url 0 "nature+sounds")
+
+  (def tracks (->> "nature+sounds" get-tracks shuffle (take 20)))
+  (get-tracks "nature+sounds")
+  (count tracks)
+  (def total-duration
+    (/ (reduce #(+ %1 (:duration %2)) 0 tracks) 1000.0 60 60))
   (def long-tracks (->> tracks (sort-by :duration) reverse))
   (def play-tracks (take 20 (map :permalink_url long-tracks)))
   (def handler (partial app play-tracks))
   (first play-tracks)
 
+  (-main)
   (def tracks (take 20 (map :permalink_url (shuffle (get-tracks "nature+sounds")))))
 
   (def stop-server (serv/run-server handler {:port 8080}))
-
+  (-main)
   )

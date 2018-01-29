@@ -3,11 +3,11 @@
 
 (set-env! :resource-paths #{"resources" "src"}
           :source-paths   #{"test"}
-          :dependencies   '[[org.clojure/clojure "RELEASE"]
-                            [adzerk/boot-test "RELEASE" :scope "test"]
+          :dependencies   '[[adzerk/boot-test "RELEASE" :scope "test"]
                             [cheshire "5.6.1"]
-                            [http-kit "2.1.18"]]
-          )
+                            [clj-http "3.4.1"]
+                            [http-kit "2.1.18"]
+                            [org.clojure/clojure "RELEASE"]])
 
 (task-options!
  aot {:namespace   #{'soundcloud.core}}
